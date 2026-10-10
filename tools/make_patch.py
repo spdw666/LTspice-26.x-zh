@@ -40,26 +40,27 @@ def patch_bytes(data, slots, tr, stats):
             continue
 
         nbytes, kind = s["nbytes"], s["kind"]
-        # 等长补齐：菜单与字符串表补空格（含 \t 时补在 \t 前），对话框严格等长
-        if kind in ("string", "menu"):
-            units = nbytes // 2
-            if len(zh) < units:
-                pad = " " * (units - len(zh))
-                i = zh.find("\t")
-                zh = (zh[:i] + pad + zh[i:]) if i >= 0 else (zh + pad)
-            zh = zh[:units]
+        units = nbytes // 2
 
-        nb = zh.encode("utf-16-le")
-        if len(nb) > nbytes:
+        # 三类资源的字段都以 NUL 结尾，字段**边界由 NUL 位置决定**，不是由写了多少字节决定。
+        # 所以一律补空格到与原文字符数完全相同 —— 空格的码元不是 NUL，终止 NUL 位置不变，
+        # 后续结构字段就不会被读错。绝不能"填 NUL 提前终止"，那会让对话框整块错位。
+        if len(zh) > units:
             stats["toolong"] += 1
             continue
+        if len(zh) < units:
+            pad = " " * (units - len(zh))
+            i = zh.find("\t")
+            zh = (zh[:i] + pad + zh[i:]) if i >= 0 else (zh + pad)
+        nb = zh.encode("utf-16-le")
 
         off = s["abs"]
         if bytes(data[off:off + len(nb)]) == nb:
             stats["same"] += 1
             continue
-        records.append({"off": off, "text": key, "zh": zh})
-        data[off:off + nbytes] = nb + b"\x00" * (nbytes - len(nb))
+        records.append({"off": off, "text": key, "zh": zh, "kind": kind})
+        # 只写译文本身，紧邻的终止 NUL 与后续结构字段保持原样
+        data[off:off + len(nb)] = nb
         stats["hit"] += 1
     return records
 
@@ -86,15 +87,16 @@ def main():
     else:
         print("exe sha256 匹配 ✔  %s" % sha)
 
-    stats = {"hit": 0, "miss": 0, "toolong": 0, "same": 0}
+    stats = {"hit": 0, "miss": 0, "toolong": 0, "same": 0, "unequal": 0}
     recs = patch_bytes(bytearray(data), meta["slots"], tr, stats)
-    print("可用槽位 %d | 命中 %d | 未命中 %d | 超长跳过 %d | 已一致 %d"
-          % (len(meta["slots"]), stats["hit"], stats["miss"], stats["toolong"], stats["same"]))
+    print("可用槽位 %d | 命中 %d | 未命中 %d | 超长跳过 %d | 对话框长度不等跳过 %d | 已一致 %d"
+          % (len(meta["slots"]), stats["hit"], stats["miss"], stats["toolong"],
+             stats["unequal"], stats["same"]))
 
     if args.verify:
         # roundtrip：空词典必须一个字节都不动
         d2 = bytearray(open(args.exe, "rb").read())
-        s2 = {"hit": 0, "miss": 0, "toolong": 0, "same": 0}
+        s2 = {"hit": 0, "miss": 0, "toolong": 0, "same": 0, "unequal": 0}
         patch_bytes(d2, meta["slots"], {}, s2)
         print("roundtrip 一致:", bytes(d2) == bytes(open(args.exe, "rb").read()))
         return
