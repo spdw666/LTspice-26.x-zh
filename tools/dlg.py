@@ -23,19 +23,24 @@ TRANSLATABLE = ("title", "ctrl_title")
 
 
 def _sz(b, p, n):
-    """sz_Or_Ord：返回 ((kind, value), next_p)。kind: 'empty' | 'ord' | 'txt'"""
+    """sz_Or_Ord：返回 ((kind, value), start, next_p)。kind: 'empty' | 'ord' | 'txt'。
+
+    start 是字段首字节位置（txt 时即文本首字节），**由读取过程直接给出**。
+    绝不能事后按 len(value) 反推：len() 数的是码点，一个非 BMP 字符
+    （emoji 等）占 1 码点却是 2 个 UTF-16 码元，反推出来的起点会偏小 2 字节/字符。
+    """
     if p + 2 > n: raise ValueError("越界")
     w, = struct.unpack_from("<H", b, p)
     if w == 0x0000:
-        return ("empty", None), p + 2
+        return ("empty", None), p, p + 2
     if w == 0xFFFF:
         v, = struct.unpack_from("<H", b, p + 2)
-        return ("ord", v), p + 4
+        return ("ord", v), p, p + 4
     e = p
     while e + 2 <= n and struct.unpack_from("<H", b, e)[0] != 0x0000:
         e += 2
     if e + 2 > n: raise ValueError("文本未终止 @%d" % p)
-    return ("txt", b[p:e].decode("utf-16-le")), e + 2
+    return ("txt", b[p:e].decode("utf-16-le")), p, e + 2
 
 def _align4(p):
     return (p + 3) & ~3
@@ -54,22 +59,22 @@ def parse_dialog(blob):
         p = 18
     # menu / windowClass / title
     for name in ("menu", "class", "title"):
-        (k, v), p = _sz(blob, p, n)
+        (k, v), start, p = _sz(blob, p, n)
         if k == "txt":
-            slots.append((p - len(v) * 2 - 2, v, name))
+            slots.append((start, v, name))
     if ex:
         if style & 0x40:                      # DS_SETFONT
             pointsize, weight, italic, charset = struct.unpack_from("<HHBB", blob, p)
             p += 6
-            (k, v), p = _sz(blob, p, n)
+            (k, v), start, p = _sz(blob, p, n)
             if k == "txt":
-                slots.append((p - len(v) * 2 - 2, v, "font"))
+                slots.append((start, v, "font"))
     else:
         if style & 0x40:
             p += 2                            # pointsize
-            (k, v), p = _sz(blob, p, n)
+            (k, v), start, p = _sz(blob, p, n)
             if k == "txt":
-                slots.append((p - len(v) * 2 - 2, v, "font"))
+                slots.append((start, v, "font"))
     for i in range(cdit):
         p = _align4(p)
         if ex:
@@ -79,9 +84,9 @@ def parse_dialog(blob):
             ist, iexstyle, ix, iy, icx, icy, iid = struct.unpack_from("<IIhhhhH", blob, p)
             p += 18
         for name in ("ctrl_class", "ctrl_title"):   # windowClass / title
-            (k, v), p = _sz(blob, p, n)
+            (k, v), start, p = _sz(blob, p, n)
             if k == "txt":
-                slots.append((p - len(v) * 2 - 2, v, name))
+                slots.append((start, v, name))
         cdsz, = struct.unpack_from("<H", blob, p)
         p += 2 + cdsz
     return slots, ex
