@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+_verify/
+_test_slots.json
+*.exe
+*.orig.bak
