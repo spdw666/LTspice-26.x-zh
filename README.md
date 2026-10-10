@@ -14,7 +14,7 @@
 
 ```
 在本机安装 LTspice 26.x 汉化：
-1. git clone <本仓库地址> 到工作区
+1. git clone https://github.com/spdw666/LTspice-26.x-zh 到工作区
 2. 运行 python tools/apply_patch.py --patch patches/ltspice-26.1.1-zh.patch.json \
      --exe "<LTspice 安装目录>\LTspice.exe" --backup --restore
    (LTspice 默认安装在 %LOCALAPPDATA%\Programs\ADI\LTspice 或 C:\Program Files\ADI\LTspice)
@@ -29,7 +29,7 @@
 
 ```powershell
 pip install pefile
-git clone <本仓库地址>; cd LTspice-26x-zh
+git clone https://github.com/spdw666/LTspice-26.x-zh; cd LTspice-26.x-zh
 
 # 1) 备份原件 + 打补丁（--restore 会先还原再打，可重复执行）
 python tools/apply_patch.py --patch patches/ltspice-26.1.1-zh.patch.json ^

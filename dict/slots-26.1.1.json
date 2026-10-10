@@ -1,5 +1,5 @@
 {
- "exe": "D:\\Program Files\\ADI\\LTspice\\LTspice.exe",
+ "exe": "LTspice.exe",
  "sha256": "3c144a2b3ec6a30baac6761c502d99b95aaa40b947ff5eca25b8fbd80d68af72",
  "slots": [
   {
@@ -23362,5 +23362,6 @@
    "room": 30,
    "text": "%Ts [Recovered]"
   }
- ]
+ ],
+ "version": "26.1.1"
 }

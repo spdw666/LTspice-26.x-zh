@@ -106,7 +106,7 @@ def main():
         "format": "ltspice-zh-patch/1",
         "target": {
             "file": "LTspice.exe",
-            "version": meta.get("version", "unknown"),
+            "version": meta.get("version") or "unknown",
             "sha256": meta.get("sha256"),
         },
         "stats": stats,
