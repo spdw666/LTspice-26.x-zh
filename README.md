@@ -5,8 +5,6 @@
 
 **不改动任何可执行代码** —— 只替换 PE 资源段里的界面文本，代码段、PE 头、节表零改动，随时可还原。
 
-![汉化后的 LTspice 主界面](docs/screenshot.png)
-
 ---
 
 ## 目录
@@ -201,7 +199,6 @@ LTspice-26.x-zh/
 │  ├─ zh_dict.json                     1466 条人工校对词典（含专业术语）
 │  └─ slots-26.1.1.json                26.1.1 基准槽位表（2920 条）
 ├─ docs/
-│  ├─ screenshot.png
 │  └─ SKILL.md                         给 agent 的精简版 skill 说明
 ├─ AGENTS.md                           agent 自动读取的仓库约定
 └─ README.md
